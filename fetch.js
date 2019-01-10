@@ -241,13 +241,17 @@ function findMatchingProjects(projects, project_name) {
   });
 }
 
-function compileProjectData(project_name) {
+function compileProjectData(project_name, team_id) {
   console.log('Fetching projects...');
 
   fetchProjects(function (err, res, projects) {
     if (err || !projects || projects.length === 0) {
       console.log('No projects found!');
       return false;
+    }
+
+    if(team_id > 0){
+      projects = _.filter(projects, { team_id: team_id })
     }
 
     projects = _.sortBy(projects, 'name');
@@ -289,13 +293,19 @@ function init() {
     help: 'project name to retrieve or "all"'
   });
 
+  parser.addArgument(['-t', '--team'], {
+    defaultValue: 0,
+    type: 'int',
+    help: 'team id, restrict projects to a specific team'
+  });
+
   var args = parser.parseArgs();
 
   if (!TOKEN) {
     return displayNoTokenMessage();
   }
 
-  compileProjectData(args.project);
+  compileProjectData(args.project, args.team);
 }
 
 init();
