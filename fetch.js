@@ -3,6 +3,7 @@ var fs = require('fs');
 var _ = require('lodash');
 var moment = require('moment');
 var request = require('request');
+var argparse = require('argparse').ArgumentParser;
 
 var MILLISECONDS_IN_A_DAY = 1000 * 60 * 60 * 24;
 var DATE_FORMAT = 'YYYY-MM-DD';
@@ -230,18 +231,17 @@ function fetchAndCompileChartsForAllProjects(projects) {
   }
 }
 
-function findMatchingProjects(projects, query) {
-  if (query === 'all') {
+function findMatchingProjects(projects, project_name) {
+  if (project_name === 'all') {
     return _.filter(projects, { archived: false });
   }
 
   return _.filter(projects, function (project) {
-    return parseInt(query, 10) === project.id || project.name.toLowerCase().indexOf(query) === 0;
+    return parseInt(project_name, 10) === project.id || project.name.toLowerCase().indexOf(project_name) === 0;
   });
 }
 
-function compileProjectData() {
-  var query = process.argv[2];
+function compileProjectData(project_name) {
   console.log('Fetching projects...');
 
   fetchProjects(function (err, res, projects) {
@@ -253,8 +253,8 @@ function compileProjectData() {
     projects = _.sortBy(projects, 'name');
     saveProjectsToFile(projects);
 
-    var foundProjects = findMatchingProjects(projects, query);
-    if (!query || foundProjects.length === 0) {
+    var foundProjects = findMatchingProjects(projects, project_name);
+    if (!project_name || foundProjects.length === 0) {
       if (foundProjects.length === 0) {
         console.log('Matching project not found!');
       }
@@ -279,11 +279,23 @@ function displayNoTokenMessage() {
 }
 
 function init() {
+  var parser = new argparse({
+    version: '0.0.1',
+    addHelp: true,
+  });
+
+  parser.addArgument('project', {
+    defaultValue: 'all',
+    help: 'project name to retrieve or "all"'
+  });
+
+  var args = parser.parseArgs();
+
   if (!TOKEN) {
     return displayNoTokenMessage();
   }
 
-  compileProjectData();
+  compileProjectData(args.project);
 }
 
 init();
